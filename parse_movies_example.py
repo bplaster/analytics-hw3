@@ -15,14 +15,16 @@ def load_all_movies(filename):
     movie_regexp = re.compile("MV: ((.*?) \(([0-9]+).*\)(.*))")
     skipped = 0
 
-    stop = 10000
-    count = 0
+    # DEBUG
+    # stop = 10000
+    # count = 0
 
     for line in gzip.open(filename):
 
-        count += 1
-        if count == stop:
-            break
+        # DEBUG
+        # count += 1
+        # if count == stop:
+        #     break
 
         if line.startswith("MV"):
             if current_movie:

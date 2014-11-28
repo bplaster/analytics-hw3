@@ -14,7 +14,16 @@ def load_all_movies(filename):
     current_movie = None
     movie_regexp = re.compile("MV: ((.*?) \(([0-9]+).*\)(.*))")
     skipped = 0
+
+    stop = 10000
+    count = 0
+
     for line in gzip.open(filename):
+
+        count += 1
+        if count == stop:
+            break
+
         if line.startswith("MV"):
             if current_movie:
                 # Fix up description and send it on
@@ -37,9 +46,3 @@ def load_all_movies(filename):
             # Add to the current movie's description
             current_movie['summary'].append(line.replace("PL: ",""))
     print "Skipped",skipped
-
-
-all_movies = list(load_all_movies("/home/michael/tmp/plot.list.gz"))
-
-len(all_movies)
-# => 379451

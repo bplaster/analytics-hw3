@@ -4,6 +4,7 @@ import numpy as np
 import operator
 import math
 import random
+import re
 
 # Returns statistics about years
 def year_stats(years):
@@ -12,13 +13,15 @@ def year_stats(years):
 	bin_n = int((max_y - min_y) / 10) + 1
 	return min_y, max_y, bin_n
 
-# Returns lower case word without some special characters
+# Returns list of words from string
+def norm_words(words):
+	pattern = re.compile(r'\W+')
+	word_list = [norm_word(w) for w in pattern.split(words)]
+	return word_list
+
+# Returns lower case word without special characters
 def norm_word(word):
-	word = word.strip().lower()
-	tbr = ["'s", '.', '?', '!', ',', ':', ';','(',')',"'"]
-	for c in tbr:
-		if c in word:
-			word = word.replace(c,'')
+	word = ''.join(c.lower() for c in word if c.isalnum())
 	return word
 
 # Plots histogram over years
@@ -37,7 +40,7 @@ def y_given_x(years, plots, word):
 	y_g_x = []
 	word = norm_word(word)
 	for i, plot in enumerate(plots):
-		if word in plot.lower:
+		if word in norm_words(plot):
 			y_g_x.append(years[i])
 	return y_g_x
 
@@ -45,9 +48,7 @@ def y_given_x(years, plots, word):
 def all_x_all_y(years, plots):
 	wc = {}
 	for i, year in enumerate(years):
-		plot = plots[i].split()
-		for word in plot:
-			word = norm_word(word)
+		for word in norm_words(plots[i]):
 			if word in wc:
 				if year in wc[word]: 
 					wc[word][year] += 1.
@@ -68,14 +69,13 @@ def p_x_given_y(wc, word, year):
 	#print word, p
 	return p	
 
-# Returns dictionary of movie prediction for each year
-def movie_decade_predict(years, plots, movie_plot):
+# Returns dictionary of movie prediction for each year for given plot
+def movie_decade_probs(wc, years, plot):
 	min_year, max_year, bin_num = year_stats(years)
 	decades = {}
-	wc = all_x_all_y(years, plots)
 	for year in range(min_year, max_year + 10, 10):
 		p = 0
-		for word in movie_plot.split():
+		for word in norm_words(plot):
 			p += math.log(p_x_given_y(wc, word, year),10)
 		decades[year] = p
 	#print decades
@@ -92,13 +92,13 @@ def get_movie(all_movies, movie_title):
 			break
 	return year, plot
 
-# Prints Predicted and Actual movie year
-def predict_movie(years_train, plots_train, plot = '', title = '', all_movies = None, prints = False):
+# Returns Predicted movie year
+def predict_decade(wc, years_train, plot = '', title = '', all_movies = None, prints = False):
 	decade = 0
 	if not title == '' and not all_movies == None:
 		decade, plot = get_movie(all_movies, title)
 	
-	decades = movie_decade_predict(years_train, plots_train, plot)
+	decades = movie_decade_probs(wc, years_train, plot)
 	predicted_decade =  max(decades.iteritems(), key=operator.itemgetter(1))[0]
 
 	if prints:
@@ -113,6 +113,7 @@ if __name__ == '__main__':
 
 	# Get set of all movies
 	all_movies = list(load_all_movies("plot.list.gz"))
+	random.shuffle(all_movies)
 	years, plots, titles = [], [], []
 
 	for movie in all_movies:
@@ -140,7 +141,7 @@ if __name__ == '__main__':
 	year_count_train = [0]*bin_num
 	year_count_test = [0]*bin_num
 	train_sample_size = 6000
-	test_sample_size = 100
+	test_sample_size = 10
 
 	# Create uniformly distributed training and test sets
 	for i, year in enumerate(years):
@@ -170,17 +171,18 @@ if __name__ == '__main__':
 	# hist_plot(y_given_x(years_train, plots_train, 'the'), "PMF of P(Y|X'the'>0)", 'P2h.png')
 
 	# 2j
-	predict_movie(years_train, plots_train, title='Finding Nemo', all_movies = all_movies, prints = True)
-	predict_movie(years_train, plots_train, title='The Matrix', all_movies = all_movies, prints = True)
-	predict_movie(years_train, plots_train, title='Gone with the Wind', all_movies = all_movies, prints = True)
-	predict_movie(years_train, plots_train, title='Harry Potter and the Goblet of Fire', all_movies = all_movies, prints = True)
-	predict_movie(years_train, plots_train, title='Avatar', all_movies = all_movies, prints = True)
+	wc = all_x_all_y(years_train, plots_train)
 
-	correct_count = 0
+	predict_decade(wc, years_train, title='Finding Nemo', all_movies = all_movies, prints = True)
+	predict_decade(wc, years_train, title='The Matrix', all_movies = all_movies, prints = True)
+	predict_decade(wc, years_train, title='Gone with the Wind', all_movies = all_movies, prints = True)
+	predict_decade(wc, years_train, title='Harry Potter and the Goblet of Fire', all_movies = all_movies, prints = True)
+	predict_decade(wc, years_train, title='Avatar', all_movies = all_movies, prints = True)
+
+	correct_count = 0.
 	for i, plot in enumerate(plots_test):
-		decade = predict_movie(years_train, plots_train, plot=plot)
-		correct_count += 1 if decade == years_test[i] else 0
-		#print titles_test[i]
+		decade = predict_decade(wc, years_train, plot=plot)
+		correct_count += 1. if decade == years_test[i] else 0.
 
 	print "Accuracy on test: ", correct_count/len(plots_test)
 

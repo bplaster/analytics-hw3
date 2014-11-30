@@ -14,14 +14,16 @@ def load_all_movies(filename):
     current_movie = None
     movie_regexp = re.compile("MV: ((.*?) \(([0-9]+).*\)(.*))")
     skipped = 0
+    prev_title = ''
+    prev_year = 0
 
     # DEBUG
-    # stop = 10000
-    # count = 0
+    stop = 20000
+    count = 0
 
     for line in gzip.open(filename):
 
-        # DEBUG
+        # # DEBUG
         # count += 1
         # if count == stop:
         #     break
@@ -34,9 +36,12 @@ def load_all_movies(filename):
             current_movie = None
             try:
                 identifier, title, year, episode = movie_regexp.match(line).groups()
-                if int(year) < 1930 or int(year) > 2014:
+                # Also skip duplicate movies
+                if int(year) < 1930 or int(year) > 2014 or (prev_year == year and prev_title == title):
                     # Something went wrong here
                     raise ValueError(identifier)
+                prev_title = title
+                prev_year = year
                 current_movie = {"title": title,
                                  "year": 10*int(int(year)/10),
                                  'identifier': identifier,

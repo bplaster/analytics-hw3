@@ -1,5 +1,6 @@
 from parse_movies_example import load_all_movies 
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import operator
 import math
@@ -16,7 +17,12 @@ def year_stats(years):
 # Returns list of words from string
 def norm_words(words):
 	pattern = re.compile(r'\W+')
-	word_list = [norm_word(w).encode('utf-8') for w in pattern.split(words)]
+	word_list = []
+	for w in pattern.split(words):
+		w = norm_word(w)
+		if not w == '':
+			word_list.append(w)
+	#word_list = [norm_word(w) for w in pattern.split(words)]
 	return word_list
 
 # Returns lower case word without special characters
@@ -33,7 +39,7 @@ def hist_plot(years, title, fname):
 	plt.ylabel('P(Y)')
 	plt.xticks(np.arange(min_year, max_year + 10, 10))
 	plt.savefig(fname)
-	plt.show()
+	#plt.show()
 
 # Returns list of all years with given word in plot
 def y_given_x(years, plots, word):
@@ -142,7 +148,7 @@ if __name__ == '__main__':
 	year_count_train = [0]*bin_num
 	year_count_test = [0]*bin_num
 	train_sample_size = 5000
-	test_sample_size = 1000
+	test_sample_size = 10
 
 	# Create uniformly distributed training and test sets
 	for i, year in enumerate(years):
@@ -171,18 +177,22 @@ if __name__ == '__main__':
 	# # 2h. Plot P(Y|X "the" > 0)
 	# hist_plot(y_given_x(years_train, plots_train, 'the'), "PMF of P(Y|X'the'>0)", 'P2h.png')
 
-	# # 2j. Predicts for certain movies
-	# predict_decade(wc, years_train, title='Finding Nemo', all_movies = all_movies, prints = True)
-	# predict_decade(wc, years_train, title='The Matrix', all_movies = all_movies, prints = True)
-	# predict_decade(wc, years_train, title='Gone with the Wind', all_movies = all_movies, prints = True)
-	# predict_decade(wc, years_train, title='Harry Potter and the Goblet of Fire', all_movies = all_movies, prints = True)
-	# predict_decade(wc, years_train, title='Avatar', all_movies = all_movies, prints = True)
+	# 2j. Predicts for certain movies
+	predict_decade(wc, years_train, title='Finding Nemo', all_movies = all_movies, prints = True)
+	predict_decade(wc, years_train, title='The Matrix', all_movies = all_movies, prints = True)
+	predict_decade(wc, years_train, title='Gone with the Wind', all_movies = all_movies, prints = True)
+	predict_decade(wc, years_train, title='Harry Potter and the Goblet of Fire', all_movies = all_movies, prints = True)
+	predict_decade(wc, years_train, title='Avatar', all_movies = all_movies, prints = True)
 
 	# Test classifier
 	correct_count = [0.]*bin_num
+	confusion_matrix = np.zeros((bin_num,bin_num))
 	for i, plot in enumerate(plots_test):
 		predicted_decade, decade_probs = predict_decade(wc, years_train, plot=plot)
 		actual_year = years_test[i]
+		ay_bin = int((actual_year - min_year)/10)
+		py_bin = int((predicted_decade - min_year)/10)
+		confusion_matrix[ay_bin,py_bin] += 1
 		for i, decade in enumerate(decade_probs):
 			correct_count[i] += 1. if decade[0] == actual_year else 0.
 
@@ -199,8 +209,22 @@ if __name__ == '__main__':
 	plt.xlabel('k (guesses)')
 	plt.ylabel('Accuracy within k guesses')
 	plt.savefig('P2l.png')
-	plt.show()
 
+	# 2m. Plot confusion matrix
+	print "Confusion Matrix:"
+	print confusion_matrix
+	fig, ax = plt.subplots()
+	plt.title('Confusion Matrix')
+	plt.xlabel('Actual Years')
+	plt.ylabel('Predicted Years')
+	ax.set_xticklabels(np.arange(min_year, max_year + 10, 10))
+	ax.set_yticklabels(np.arange(min_year, max_year + 10, 10))
+	ax.set_xticks(np.arange(confusion_matrix.shape[1]) + 0.5, minor=False)
+	ax.set_yticks(np.arange(confusion_matrix.shape[0]) + 0.5, minor=False)
+	heatmap = ax.pcolor(confusion_matrix, cmap="spectral")
+	cb = fig.colorbar(heatmap, ax=ax)
+	cb.set_label('Magnitude')
+	plt.savefig('P2m.png')
 
 
 

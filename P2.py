@@ -16,7 +16,7 @@ def year_stats(years):
 # Returns list of words from string
 def norm_words(words):
 	pattern = re.compile(r'\W+')
-	word_list = [norm_word(w) for w in pattern.split(words)]
+	word_list = [norm_word(w).encode('utf-8') for w in pattern.split(words)]
 	return word_list
 
 # Returns lower case word without special characters

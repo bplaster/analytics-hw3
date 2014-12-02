@@ -5,17 +5,17 @@ from parse_movies_example import load_all_movies
 from nltk.corpus import stopwords
 import P2
 
-def get_top_words(wc, top_num = 10):
+def get_top_words(wc, train_sample_size, top_num = 10):
 	top_words = {}
 	for word in wc:
 		if not word in stopwords.words():
 			for decade in wc[word]:
-				p = P2.p_x_given_y(wc, word, decade)
+				p = P2.p_x_given_y(wc, word, decade, train_sample_size)
 				p_min = 1
 
 				for n_decade in wc[word]:
 					if not n_decade == decade:
-						p_min = min(P2.p_x_given_y(wc, word, n_decade), p_min)
+						p_min = min(P2.p_x_given_y(wc, word, n_decade, train_sample_size), p_min)
 
 				ratio = p/p_min
 				# ratio = wc[word][decade]/min(wc[word].values())
@@ -71,20 +71,20 @@ if __name__ == '__main__':
 			years_test.append(year)
 			plots_test.append(plots[i])
 			titles_test.append(titles[i])
-	wc = P2.all_x_all_y(years_train, plots_train)
+	dw, wc = P2.all_x_all_y(years_train, plots_train)
 
 	# 3a. Determine Top 10 words of each decade
-	top_words = get_top_words(wc, 10)
+	top_words = get_top_words(wc, train_sample_size, 10)
 	for decade in top_words:
 		print decade, ':', top_words[decade].keys()
 
 	# 3b. Test classifer without top 100 words
-	top_words = get_top_words(wc, 100)
+	top_words = get_top_words(wc, train_sample_size, 100)
 	correct_count_wo = [0.]*bin_num
 	correct_count_w = [0.]*bin_num
 	for i, plot in enumerate(plots_test):
-		predicted_decade_wo, decade_probs_wo = P2.predict_decade(wc, years_train, train_sample_size, plot=plot, skip_words=top_words)
-		predicted_decade_w, decade_probs_w = P2.predict_decade(wc, years_train, train_sample_size, plot=plot)
+		predicted_decade_wo, decade_probs_wo = P2.predict_decade(wc, dw, years_train, train_sample_size, plot=plot, skip_words=top_words)
+		predicted_decade_w, decade_probs_w = P2.predict_decade(wc, dw, years_train, train_sample_size, plot=plot)
 
 		actual_year = years_test[i]
 		for i, decade in enumerate(decade_probs_wo):

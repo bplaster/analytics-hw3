@@ -55,7 +55,7 @@ if __name__ == '__main__':
 	years_test, plots_test, titles_test = [], [], []
 	year_count_train = [0]*bin_num
 	year_count_test = [0]*bin_num
-	train_sample_size = 6000
+	train_sample_size = 5000
 	test_sample_size = 1000
 
 	# Create uniformly distributed training and test sets
@@ -83,8 +83,8 @@ if __name__ == '__main__':
 	correct_count_wo = [0.]*bin_num
 	correct_count_w = [0.]*bin_num
 	for i, plot in enumerate(plots_test):
-		predicted_decade_wo, decade_probs_wo = P2.predict_decade(wc, years_train, plot=plot, skip_words=top_words)
-		predicted_decade_w, decade_probs_w = P2.predict_decade(wc, years_train, plot=plot)
+		predicted_decade_wo, decade_probs_wo = P2.predict_decade(wc, years_train, train_sample_size, plot=plot, skip_words=top_words)
+		predicted_decade_w, decade_probs_w = P2.predict_decade(wc, years_train, train_sample_size, plot=plot)
 
 		actual_year = years_test[i]
 		for i, decade in enumerate(decade_probs_wo):

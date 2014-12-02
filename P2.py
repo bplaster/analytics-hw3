@@ -25,7 +25,7 @@ def norm_words(words, exclude_stopwords=False):
 		if not w == '' and not w in word_list:
 			add_word = True
 			if exclude_stopwords:
-				if w in stopwords.words():
+				if w in stopwords.words('english'):
 					add_word = False
 			if add_word:
 				word_list.append(w)
@@ -95,17 +95,17 @@ def all_x_all_y(years, plots):
 	return wc
 
 # Returns probability of word in given year
-def p_x_given_y(wc, word, year):
+def p_x_given_y(wc, word, year, y_count):
 	p = 0.00001
 	word = norm_word(word)
 	if word in wc:
 		if year in wc[word]:
-			p = wc[word][year]/sum(wc[word].values())
+			p = wc[word][year]/y_count
 	#print word, p
 	return p	
 
 # Returns sorted tuple of movie prediction for each year for given plot
-def movie_decade_probs(wc, years, plot, skip_words=None):
+def movie_decade_probs(wc, years, train_sample_size, plot, skip_words=None):
 	min_year, max_year, bin_num = year_stats(years)
 	decade_probs = {}
 	for year in range(min_year, max_year + 10, 10):
@@ -114,7 +114,7 @@ def movie_decade_probs(wc, years, plot, skip_words=None):
 			if skip_words and year in skip_words:
 				if word in skip_words[year]:
 					continue
-			p += math.log(p_x_given_y(wc, word, year),10)
+			p += math.log(p_x_given_y(wc, word, year, train_sample_size),10)
 		decade_probs[year] = p
 	sorted_probs = sorted(decade_probs.items(), key=operator.itemgetter(1), reverse=True)
 	return sorted_probs
@@ -131,12 +131,12 @@ def get_movie(all_movies, movie_title):
 	return year, plot
 
 # Returns Predicted movie year
-def predict_decade(wc, years_train, plot='', title='', all_movies=None, prints=False, skip_words=None):
+def predict_decade(wc, years_train, train_sample_size, plot='', title='', all_movies=None, prints=False, skip_words=None):
 	decade = 0
 	if not title == '' and not all_movies == None:
 		decade, plot = get_movie(all_movies, title)
 	
-	decade_probs = movie_decade_probs(wc, years_train, plot, skip_words=skip_words)
+	decade_probs = movie_decade_probs(wc, years_train, train_sample_size, plot, skip_words=skip_words)
 	predicted_decade =  decade_probs[0][0]
 
 	if prints:
@@ -169,7 +169,7 @@ if __name__ == '__main__':
 	year_count_train = [0]*bin_num
 	year_count_test = [0]*bin_num
 	train_sample_size = 5000
-	test_sample_size = 1000
+	test_sample_size = 10
 
 	# Create uniformly distributed training and test sets
 	for i, year in enumerate(years):
@@ -190,7 +190,7 @@ if __name__ == '__main__':
 	correct_count = [0.]*bin_num
 	confusion_matrix = np.zeros((bin_num,bin_num))
 	for i, plot in enumerate(plots_test):
-		predicted_decade, decade_probs = predict_decade(wc, years_train, plot=plot)
+		predicted_decade, decade_probs = predict_decade(wc, years_train, train_sample_size, plot=plot)
 		actual_year = years_test[i]
 		ay_bin = int((actual_year - min_year)/10)
 		py_bin = int((predicted_decade - min_year)/10)
@@ -223,11 +223,11 @@ if __name__ == '__main__':
 	# hist_plot(y_given_x(years_train, plots_train, 'the'), "PMF of P(Y|X'the'>0)", 'P2h.png')
 
 	# 2j. Predicts for certain movies
-	predict_decade(wc, years_train, title='Finding Nemo', all_movies = all_movies, prints = True)
-	predict_decade(wc, years_train, title='The Matrix', all_movies = all_movies, prints = True)
-	predict_decade(wc, years_train, title='Gone with the Wind', all_movies = all_movies, prints = True)
-	predict_decade(wc, years_train, title='Harry Potter and the Goblet of Fire', all_movies = all_movies, prints = True)
-	predict_decade(wc, years_train, title='Avatar', all_movies = all_movies, prints = True)
+	predict_decade(wc, years_train, train_sample_size, title='Finding Nemo', all_movies = all_movies, prints = True)
+	predict_decade(wc, years_train, train_sample_size, title='The Matrix', all_movies = all_movies, prints = True)
+	predict_decade(wc, years_train, train_sample_size, title='Gone with the Wind', all_movies = all_movies, prints = True)
+	predict_decade(wc, years_train, train_sample_size, title='Harry Potter and the Goblet of Fire', all_movies = all_movies, prints = True)
+	predict_decade(wc, years_train, train_sample_size, title='Avatar', all_movies = all_movies, prints = True)
 	
 	# 2k. Accuracy of the classifier
 	print "Accuracy on test: ", correct_count[0]/len(plots_test)

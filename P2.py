@@ -1,12 +1,13 @@
 from parse_movies_example import load_all_movies 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from nltk.corpus import stopwords
 import numpy as np
 import operator
 import math
 import random
 import re
-
+ 
 # Returns statistics about years
 def year_stats(years):
 	min_y = min(years)
@@ -15,14 +16,15 @@ def year_stats(years):
 	return min_y, max_y, bin_n
 
 # Returns list of words from string
-def norm_words(words):
+def norm_words(words, exclude_stopwords=False):
 	pattern = re.compile(r'\W+')
 	word_list = []
 	for w in pattern.split(words):
 		w = norm_word(w)
+		if exclude_stopwords:
+			w = '' if w in stopwords.words() else w
 		if not w == '':
 			word_list.append(w)
-	#word_list = [norm_word(w) for w in pattern.split(words)]
 	return word_list
 
 # Returns lower case word without special characters
@@ -40,13 +42,36 @@ def hist_plot(years, title, fname):
 	plt.xticks(np.arange(min_year, max_year + 10, 10))
 	plt.savefig(fname)
 	#plt.show()
+	plt.close('all')
+
+def hist_bar_plot(probs, title, fname):
+	min_year, max_year, bin_num = year_stats(years)
+	ind = []
+	ht = []
+	width = 10
+	total = 0
+	for prob in probs:
+		ind.append(prob[0])
+		ht.append(prob[1])
+
+	fig = plt.figure()
+	ax = fig.add_subplot(111)
+	hist = ax.bar(ind, ht, width)
+
+	plt.title(title)
+	plt.xlabel('Year')
+	plt.ylabel('log(P(Y))')
+	plt.xticks(np.arange(min_year+5, max_year + 15, 10), np.arange(min_year, max_year + 10, 10))
+	plt.savefig(fname)
+	#plt.show()
+	plt.close('all')
 
 # Returns list of all years with given word in plot
 def y_given_x(years, plots, word):
 	y_g_x = []
 	word = norm_word(word)
 	for i, plot in enumerate(plots):
-		if word in norm_words(plot):
+		if word in norm_words(plot, exclude_stopwords=False):
 			y_g_x.append(years[i])
 	return y_g_x
 
@@ -54,7 +79,7 @@ def y_given_x(years, plots, word):
 def all_x_all_y(years, plots):
 	wc = {}
 	for i, year in enumerate(years):
-		for word in norm_words(plots[i]):
+		for word in norm_words(plots[i], exclude_stopwords=False):
 			if word in wc:
 				if year in wc[word]: 
 					wc[word][year] += 1.
@@ -76,12 +101,15 @@ def p_x_given_y(wc, word, year):
 	return p	
 
 # Returns sorted tuple of movie prediction for each year for given plot
-def movie_decade_probs(wc, years, plot):
+def movie_decade_probs(wc, years, plot, skip_words=None):
 	min_year, max_year, bin_num = year_stats(years)
 	decade_probs = {}
 	for year in range(min_year, max_year + 10, 10):
 		p = 0
-		for word in norm_words(plot):
+		for word in norm_words(plot, exclude_stopwords=True):
+			if skip_words and year in skip_words:
+				if word in skip_words[year]:
+					continue
 			p += math.log(p_x_given_y(wc, word, year),10)
 		decade_probs[year] = p
 	sorted_probs = sorted(decade_probs.items(), key=operator.itemgetter(1), reverse=True)
@@ -99,18 +127,19 @@ def get_movie(all_movies, movie_title):
 	return year, plot
 
 # Returns Predicted movie year
-def predict_decade(wc, years_train, plot = '', title = '', all_movies = None, prints = False):
+def predict_decade(wc, years_train, plot='', title='', all_movies=None, prints=False, skip_words=None):
 	decade = 0
 	if not title == '' and not all_movies == None:
 		decade, plot = get_movie(all_movies, title)
 	
-	decade_probs = movie_decade_probs(wc, years_train, plot)
+	decade_probs = movie_decade_probs(wc, years_train, plot, skip_words=skip_words)
 	predicted_decade =  decade_probs[0][0]
 
 	if prints:
 		print title
 		print "actual decade: ", decade
 		print "predicted decade: ", predicted_decade
+		hist_bar_plot(decade_probs, title, title+'.png')
 
 	return predicted_decade, decade_probs
 
@@ -130,25 +159,13 @@ if __name__ == '__main__':
 
 	min_year, max_year, bin_num = year_stats(years)
 
-	# # 2a. Plot P(Y)
-	# hist_plot(years, 'PMF of P(Y)', 'P2a.png')
-
-	# # 2b. Plot P(Y|X "radio" > 0)
-	# hist_plot(y_given_x(years, plots, 'radio'), "PMF of P(Y|X'radio'>0)", 'P2b.png')
-
-	# # 2c. Plot P(Y|X "beaver" > 0)
-	# hist_plot(y_given_x(years, plots, 'beaver'), "PMF of P(Y|X'beaver'>0)", 'P2c.png')
-
-	# # 2d. Plot P(Y|X "the" > 0)
-	# hist_plot(y_given_x(years, plots, 'the'), "PMF of P(Y|X'the'>0)", 'P2d.png')
-
 	# Get uniform subset of movies
 	years_train, plots_train, titles_train = [], [], []
 	years_test, plots_test, titles_test = [], [], []
 	year_count_train = [0]*bin_num
 	year_count_test = [0]*bin_num
 	train_sample_size = 5000
-	test_sample_size = 10
+	test_sample_size = 1000
 
 	# Create uniformly distributed training and test sets
 	for i, year in enumerate(years):
@@ -165,25 +182,6 @@ if __name__ == '__main__':
 			titles_test.append(titles[i])
 	wc = all_x_all_y(years_train, plots_train)
 
-	# # 2e. Plot P(Y)
-	# hist_plot(years_train, 'PMF of P(Y)', 'P2e.png')
-
-	# # 2f. Plot P(Y|X "radio" > 0)
-	# hist_plot(y_given_x(years_train, plots_train, 'radio'), "PMF of P(Y|X'radio'>0)", 'P2f.png')
-
-	# # 2g. Plot P(Y|X "beaver" > 0)
-	# hist_plot(y_given_x(years_train, plots_train, 'beaver'), "PMF of P(Y|X'beaver'>0)", 'P2g.png')
-
-	# # 2h. Plot P(Y|X "the" > 0)
-	# hist_plot(y_given_x(years_train, plots_train, 'the'), "PMF of P(Y|X'the'>0)", 'P2h.png')
-
-	# 2j. Predicts for certain movies
-	predict_decade(wc, years_train, title='Finding Nemo', all_movies = all_movies, prints = True)
-	predict_decade(wc, years_train, title='The Matrix', all_movies = all_movies, prints = True)
-	predict_decade(wc, years_train, title='Gone with the Wind', all_movies = all_movies, prints = True)
-	predict_decade(wc, years_train, title='Harry Potter and the Goblet of Fire', all_movies = all_movies, prints = True)
-	predict_decade(wc, years_train, title='Avatar', all_movies = all_movies, prints = True)
-
 	# Test classifier
 	correct_count = [0.]*bin_num
 	confusion_matrix = np.zeros((bin_num,bin_num))
@@ -196,7 +194,37 @@ if __name__ == '__main__':
 		for i, decade in enumerate(decade_probs):
 			correct_count[i] += 1. if decade[0] == actual_year else 0.
 
+	# 2a. Plot P(Y)
+	hist_plot(years, 'PMF of P(Y)', 'P2a.png')
 
+	# 2b. Plot P(Y|X "radio" > 0)
+	hist_plot(y_given_x(years, plots, 'radio'), "PMF of P(Y|X'radio'>0)", 'P2b.png')
+
+	# 2c. Plot P(Y|X "beaver" > 0)
+	hist_plot(y_given_x(years, plots, 'beaver'), "PMF of P(Y|X'beaver'>0)", 'P2c.png')
+
+	# 2d. Plot P(Y|X "the" > 0)
+	hist_plot(y_given_x(years, plots, 'the'), "PMF of P(Y|X'the'>0)", 'P2d.png')
+
+	# 2e. Plot P(Y)
+	hist_plot(years_train, 'PMF of P(Y)', 'P2e.png')
+
+	# 2f. Plot P(Y|X "radio" > 0)
+	hist_plot(y_given_x(years_train, plots_train, 'radio'), "PMF of P(Y|X'radio'>0)", 'P2f.png')
+
+	# 2g. Plot P(Y|X "beaver" > 0)
+	hist_plot(y_given_x(years_train, plots_train, 'beaver'), "PMF of P(Y|X'beaver'>0)", 'P2g.png')
+
+	# 2h. Plot P(Y|X "the" > 0)
+	hist_plot(y_given_x(years_train, plots_train, 'the'), "PMF of P(Y|X'the'>0)", 'P2h.png')
+
+	# 2j. Predicts for certain movies
+	predict_decade(wc, years_train, title='Finding Nemo', all_movies = all_movies, prints = True)
+	predict_decade(wc, years_train, title='The Matrix', all_movies = all_movies, prints = True)
+	predict_decade(wc, years_train, title='Gone with the Wind', all_movies = all_movies, prints = True)
+	predict_decade(wc, years_train, title='Harry Potter and the Goblet of Fire', all_movies = all_movies, prints = True)
+	predict_decade(wc, years_train, title='Avatar', all_movies = all_movies, prints = True)
+	
 	# 2k. Accuracy of the classifier
 	print "Accuracy on test: ", correct_count[0]/len(plots_test)
 
@@ -209,6 +237,8 @@ if __name__ == '__main__':
 	plt.xlabel('k (guesses)')
 	plt.ylabel('Accuracy within k guesses')
 	plt.savefig('P2l.png')
+	plt.close('all')
+
 
 	# 2m. Plot confusion matrix
 	print "Confusion Matrix:"
@@ -225,6 +255,8 @@ if __name__ == '__main__':
 	cb = fig.colorbar(heatmap, ax=ax)
 	cb.set_label('Magnitude')
 	plt.savefig('P2m.png')
+	plt.close('all')
+
 
 
 

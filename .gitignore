@@ -1,4 +1,3 @@
 plot.list.gz
 plot.list
-P2.pyc
-parse_movies_example.pyc
+*.pyc

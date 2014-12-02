@@ -59,10 +59,6 @@ if __name__ == '__main__':
 		if decade == years_test[i]:
 			correct_count += 1.
 
-	#print predicted_decade
-	#print years_test		
-	#print "length of predicted_decade: ", len(predicted_decade)		
-	#print "length of years_test: ", len(years_test)
 	print "Accuracy on test: ", correct_count/len(plots_test)
 	
 

@@ -19,12 +19,16 @@ def year_stats(years):
 def norm_words(words, exclude_stopwords=False):
 	pattern = re.compile(r'\W+')
 	word_list = []
+	add_word = False
 	for w in pattern.split(words):
 		w = norm_word(w)
-		if exclude_stopwords:
-			w = '' if w in stopwords.words() else w
 		if not w == '' and not w in word_list:
-			word_list.append(w)
+			add_word = True
+			if exclude_stopwords:
+				if w in stopwords.words():
+					add_word = False
+			if add_word:
+				word_list.append(w)
 	return word_list
 
 # Returns lower case word without special characters

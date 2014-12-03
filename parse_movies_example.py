@@ -16,6 +16,7 @@ def load_all_movies(filename):
     skipped = 0
     prev_title = ''
     prev_year = 0
+    prev_movie = {}
 
     # DEBUG
     stop = 20000
@@ -37,11 +38,9 @@ def load_all_movies(filename):
             try:
                 identifier, title, year, episode = movie_regexp.match(line).groups()
                 # Also skip duplicate movies
-                if int(year) < 1930 or int(year) > 2014 or (prev_year == year and prev_title == title):
+                if int(year) < 1930 or int(year) > 2014:
                     # Something went wrong here
                     raise ValueError(identifier)
-                prev_title = title
-                prev_year = year
                 current_movie = {"title": title,
                                  "year": 10*int(int(year)/10),
                                  'identifier': identifier,

@@ -26,8 +26,8 @@ if __name__ == '__main__':
 	years_test, plots_test, titles_test = [], [], []
 	year_count_train = [0]*bin_num
 	year_count_test = [0]*bin_num
-	train_sample_size = 6000
-	test_sample_size = 10
+	train_sample_size = 3000
+	test_sample_size = 3000
 
 	# Create uniformly distributed training and test sets
 	for i, year in enumerate(years):
@@ -44,7 +44,7 @@ if __name__ == '__main__':
 			titles_test.append(titles[i])
 
 	# Extract features
-	vec = CountVectorizer(tokenizer = P2.norm_words, encoding = 'latin-1')
+	vec = CountVectorizer(encoding = 'latin-1')
 	data = vec.fit_transform(plots_train)
 
 	# Train classifier

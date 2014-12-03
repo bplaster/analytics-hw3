@@ -15,16 +15,20 @@ def year_stats(years):
 	bin_n = int((max_y - min_y) / 10) + 1
 	return min_y, max_y, bin_n
 
-# Returns list of words from string
+# Returns list of unique words from string
 def norm_words(words, exclude_stopwords=False):
 	pattern = re.compile(r'\W+')
 	word_list = []
+	add_word = False
 	for w in pattern.split(words):
 		w = norm_word(w)
-		if exclude_stopwords:
-			w = '' if w in stopwords.words() else w
-		if not w == '':
-			word_list.append(w)
+		if not w == '' and not w in word_list:
+			add_word = True
+			if exclude_stopwords:
+				if w in stopwords.words('english'):
+					add_word = False
+			if add_word:
+				word_list.append(w)
 	return word_list
 
 # Returns lower case word without special characters
@@ -78,6 +82,7 @@ def y_given_x(years, plots, word):
 # Returns dictionary of all words and count in all years
 def all_x_all_y(years, plots):
 	wc = {}
+	dw = {}
 	for i, year in enumerate(years):
 		for word in norm_words(plots[i], exclude_stopwords=False):
 			if word in wc:
@@ -88,29 +93,50 @@ def all_x_all_y(years, plots):
 			else:
 				wc[word] = {}
 				wc[word][year] = 1.
-	return wc
+
+			if year in dw:
+				if word in dw[year]: 
+					dw[year][word] += 1.
+				else:
+					dw[year][word] = 1.
+			else:
+				dw[year] = {}
+				dw[year][word] = 1.
+
+	return dw, wc
 
 # Returns probability of word in given year
-def p_x_given_y(wc, word, year):
+def p_x_given_y(wc, word, year, y_count):
 	p = 0.00001
 	word = norm_word(word)
 	if word in wc:
 		if year in wc[word]:
-			p = wc[word][year]/sum(wc[word].values())
+			p = wc[word][year]/y_count
 	#print word, p
 	return p	
 
 # Returns sorted tuple of movie prediction for each year for given plot
-def movie_decade_probs(wc, years, plot, skip_words=None):
+def movie_decade_probs(wc, dw, years, train_sample_size, plot, skip_words=None):
 	min_year, max_year, bin_num = year_stats(years)
 	decade_probs = {}
 	for year in range(min_year, max_year + 10, 10):
 		p = 0
+		# movie_words = norm_words(plot, exclude_stopwords=True)
+		# decade_words = dw[year]
+		# for word in decade_words:
+		# 	if skip_words and year in skip_words:
+		# 		if word in skip_words[year]:
+		# 			continue
+		# 	if word in movie_words:
+		# 		p += math.log(p_x_given_y(wc, word, year, train_sample_size),10)
+		# 	else:
+		# 		p += math.log(1 - p_x_given_y(wc, word, year, train_sample_size),10)
+
 		for word in norm_words(plot, exclude_stopwords=True):
 			if skip_words and year in skip_words:
 				if word in skip_words[year]:
 					continue
-			p += math.log(p_x_given_y(wc, word, year),10)
+			p += math.log(p_x_given_y(wc, word, year, train_sample_size),10)
 		decade_probs[year] = p
 	sorted_probs = sorted(decade_probs.items(), key=operator.itemgetter(1), reverse=True)
 	return sorted_probs
@@ -127,12 +153,12 @@ def get_movie(all_movies, movie_title):
 	return year, plot
 
 # Returns Predicted movie year
-def predict_decade(wc, years_train, plot='', title='', all_movies=None, prints=False, skip_words=None):
+def predict_decade(wc, dw, years_train, train_sample_size, plot='', title='', all_movies=None, prints=False, skip_words=None):
 	decade = 0
 	if not title == '' and not all_movies == None:
 		decade, plot = get_movie(all_movies, title)
 	
-	decade_probs = movie_decade_probs(wc, years_train, plot, skip_words=skip_words)
+	decade_probs = movie_decade_probs(wc, dw, years_train, train_sample_size, plot, skip_words=skip_words)
 	predicted_decade =  decade_probs[0][0]
 
 	if prints:
@@ -180,13 +206,13 @@ if __name__ == '__main__':
 			years_test.append(year)
 			plots_test.append(plots[i])
 			titles_test.append(titles[i])
-	wc = all_x_all_y(years_train, plots_train)
+	dw, wc = all_x_all_y(years_train, plots_train)
 
 	# Test classifier
 	correct_count = [0.]*bin_num
 	confusion_matrix = np.zeros((bin_num,bin_num))
 	for i, plot in enumerate(plots_test):
-		predicted_decade, decade_probs = predict_decade(wc, years_train, plot=plot)
+		predicted_decade, decade_probs = predict_decade(wc, dw, years_train, train_sample_size, plot=plot)
 		actual_year = years_test[i]
 		ay_bin = int((actual_year - min_year)/10)
 		py_bin = int((predicted_decade - min_year)/10)
@@ -219,11 +245,11 @@ if __name__ == '__main__':
 	hist_plot(y_given_x(years_train, plots_train, 'the'), "PMF of P(Y|X'the'>0)", 'P2h.png')
 
 	# 2j. Predicts for certain movies
-	predict_decade(wc, years_train, title='Finding Nemo', all_movies = all_movies, prints = True)
-	predict_decade(wc, years_train, title='The Matrix', all_movies = all_movies, prints = True)
-	predict_decade(wc, years_train, title='Gone with the Wind', all_movies = all_movies, prints = True)
-	predict_decade(wc, years_train, title='Harry Potter and the Goblet of Fire', all_movies = all_movies, prints = True)
-	predict_decade(wc, years_train, title='Avatar', all_movies = all_movies, prints = True)
+	predict_decade(wc, dw, years_train, train_sample_size, title='Finding Nemo', all_movies = all_movies, prints = True)
+	predict_decade(wc, dw, years_train, train_sample_size, title='The Matrix', all_movies = all_movies, prints = True)
+	predict_decade(wc, dw, years_train, train_sample_size, title='Gone with the Wind', all_movies = all_movies, prints = True)
+	predict_decade(wc, dw, years_train, train_sample_size, title='Harry Potter and the Goblet of Fire', all_movies = all_movies, prints = True)
+	predict_decade(wc, dw, years_train, train_sample_size, title='Avatar', all_movies = all_movies, prints = True)
 	
 	# 2k. Accuracy of the classifier
 	print "Accuracy on test: ", correct_count[0]/len(plots_test)

@@ -14,10 +14,20 @@ from sklearn.lda import LDA
 import matplotlib.pyplot as plt
 
 dimensions = [500, 2000, 10000, 30000]
+### Classifier choices
+	# linear_model.SGDClassifier()
+	# svm.LinearSVC()
+	# svm.SVC(kernel = 'rbf')
+	# linear_model.Perceptron(penalty='l1')
+	# linear_model.Perceptron(penalty='l2',n_iter = 25)
+	# neighbors.KNeighborsClassifier()
+	# LDA()
 
 def vary_dimensions (dimensions,features,years_train,years_test,plots_test):
 	accuracies = []
+	# Choose classifier
 	clf = LDA()
+
 	for dimension in dimensions:
 		# Dimensionality reduction
 		transformer = random_projection.SparseRandomProjection(dense_output = True, n_components = dimension)
@@ -83,29 +93,6 @@ if __name__ == '__main__':
 	features = vec.fit_transform(plots_train)
 	print "Shape of original feature matrix: ", features.shape
 
-	# Dimensionality reduction
-	# transformer = random_projection.SparseRandomProjection(dense_output = True, n_components = 500)
-	# reduced_features = transformer.fit_transform(features)
-	# print "Shape of reduced feature matrix: ", reduced_features.shape
-
-	# Scaling
-	# scaler = preprocessing.StandardScaler().fit(reduced_features)
-	# scaled_reduced_features = scaler.transform(reduced_features)
-
-	# Train classifier
-	# clf = linear_model.SGDClassifier()
-	# clf = svm.LinearSVC()
-	# clf = svm.SVC(kernel = 'rbf')
-	# clf = linear_model.Perceptron(penalty='l1')
-	# clf = linear_model.Perceptron(penalty='l2',n_iter = 25)
-	# clf = neighbors.KNeighborsClassifier()
-	# clf = LDA()
-	# clf.fit(scaled_reduced_features, years_train)
-	# print "Completed training"
-
-	# Transform test plots
-	# transformed_test_plots = scaler.transform(transformer.transform(vec.transform(plots_test)))
-
 	# Vary k for LDA (favorite classifier)
 	accuracies = vary_dimensions (dimensions,features,years_train,years_test,plots_test)
 	print "Accuracy for respective dimensions: ", accuracies
@@ -116,7 +103,3 @@ if __name__ == '__main__':
 	plt.ylabel('Accuracy')
 	plt.savefig('dimensionality_accuracy.png')
 	plt.close('all')
-
-	#Test classifier
-	#print "Accuracy on test: ", get_accuracy(clf,years_test,transformed_test_plots)
-

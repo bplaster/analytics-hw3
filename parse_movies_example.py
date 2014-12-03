@@ -14,12 +14,6 @@ def load_all_movies(filename):
     current_movie = None
     movie_regexp = re.compile("MV: ((.*?) \(([0-9]+).*\)(.*))")
     skipped = 0
-<<<<<<< HEAD
-    prev_title = ''
-    prev_year = 0
-    prev_movie = {}
-=======
->>>>>>> 1a12624568186c00cb69443bb87d576cf6acd0dc
 
     # DEBUG
     stop = 20000

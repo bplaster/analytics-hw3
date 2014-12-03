@@ -220,29 +220,29 @@ if __name__ == '__main__':
 		for i, decade in enumerate(decade_probs):
 			correct_count[i] += 1. if decade[0] == actual_year else 0.
 
-	# # 2a. Plot P(Y)
-	# hist_plot(years, 'PMF of P(Y)', 'P2a.png')
+	# 2a. Plot P(Y)
+	hist_plot(years, 'PMF of P(Y)', 'P2a.png')
 
-	# # 2b. Plot P(Y|X "radio" > 0)
-	# hist_plot(y_given_x(years, plots, 'radio'), "PMF of P(Y|X'radio'>0)", 'P2b.png')
+	# 2b. Plot P(Y|X "radio" > 0)
+	hist_plot(y_given_x(years, plots, 'radio'), "PMF of P(Y|X'radio'>0)", 'P2b.png')
 
-	# # 2c. Plot P(Y|X "beaver" > 0)
-	# hist_plot(y_given_x(years, plots, 'beaver'), "PMF of P(Y|X'beaver'>0)", 'P2c.png')
+	# 2c. Plot P(Y|X "beaver" > 0)
+	hist_plot(y_given_x(years, plots, 'beaver'), "PMF of P(Y|X'beaver'>0)", 'P2c.png')
 
-	# # 2d. Plot P(Y|X "the" > 0)
-	# hist_plot(y_given_x(years, plots, 'the'), "PMF of P(Y|X'the'>0)", 'P2d.png')
+	# 2d. Plot P(Y|X "the" > 0)
+	hist_plot(y_given_x(years, plots, 'the'), "PMF of P(Y|X'the'>0)", 'P2d.png')
 
-	# # 2e. Plot P(Y)
-	# hist_plot(years_train, 'PMF of P(Y)', 'P2e.png')
+	# 2e. Plot P(Y)
+	hist_plot(years_train, 'PMF of P(Y)', 'P2e.png')
 
-	# # 2f. Plot P(Y|X "radio" > 0)
-	# hist_plot(y_given_x(years_train, plots_train, 'radio'), "PMF of P(Y|X'radio'>0)", 'P2f.png')
+	# 2f. Plot P(Y|X "radio" > 0)
+	hist_plot(y_given_x(years_train, plots_train, 'radio'), "PMF of P(Y|X'radio'>0)", 'P2f.png')
 
-	# # 2g. Plot P(Y|X "beaver" > 0)
-	# hist_plot(y_given_x(years_train, plots_train, 'beaver'), "PMF of P(Y|X'beaver'>0)", 'P2g.png')
+	# 2g. Plot P(Y|X "beaver" > 0)
+	hist_plot(y_given_x(years_train, plots_train, 'beaver'), "PMF of P(Y|X'beaver'>0)", 'P2g.png')
 
-	# # 2h. Plot P(Y|X "the" > 0)
-	# hist_plot(y_given_x(years_train, plots_train, 'the'), "PMF of P(Y|X'the'>0)", 'P2h.png')
+	# 2h. Plot P(Y|X "the" > 0)
+	hist_plot(y_given_x(years_train, plots_train, 'the'), "PMF of P(Y|X'the'>0)", 'P2h.png')
 
 	# 2j. Predicts for certain movies
 	predict_decade(wc, dw, years_train, train_sample_size, title='Finding Nemo', all_movies = all_movies, prints = True)

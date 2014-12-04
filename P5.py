@@ -13,20 +13,23 @@ from sklearn import neighbors
 from sklearn.lda import LDA
 import matplotlib.pyplot as plt
 
-dimensions = [500, 2000, 10000, 30000]
-### Classifier choices
-	# linear_model.SGDClassifier()
-	# svm.LinearSVC()
-	# svm.SVC(kernel = 'rbf')
-	# linear_model.Perceptron(penalty='l1')
-	# linear_model.Perceptron(penalty='l2',n_iter = 25)
-	# neighbors.KNeighborsClassifier()
-	# LDA()
+#Number of features to be reduced to
+dimensions = [500, 2000, 5000, 10000]
 
+#Classifier choices
+classifiers = [linear_model.SGDClassifier(),
+	svm.LinearSVC(),
+	svm.SVC(kernel = 'rbf'),
+	linear_model.Perceptron(penalty='l1'),
+	linear_model.Perceptron(penalty='l2',n_iter = 25),
+	neighbors.KNeighborsClassifier(),
+	LDA()]
+
+# Performs dimensionality reduction and scaling for every input dimension and calculates respective test accuracies
 def vary_dimensions (dimensions,features,years_train,years_test,plots_test):
 	accuracies = []
 	# Choose classifier
-	clf = LDA()
+	clf = classifiers[3]
 
 	for dimension in dimensions:
 		# Dimensionality reduction
@@ -40,12 +43,12 @@ def vary_dimensions (dimensions,features,years_train,years_test,plots_test):
 		# Transform test plots
 		transformed_test_plots = scaler.transform(transformer.transform(vec.transform(plots_test)))
 		accuracies.append(get_accuracy (clf,years_test,transformed_test_plots))
+		print "Accuracy for ", dimension, " completed"
 	return accuracies
 
 def get_accuracy (classifier, years_test, transformed_test_plots):
 	correct_count = 0.
 	years_test = np.array(years_test)
-	#new_test_plots = scaler.transform(transformer.transform(vec.transform(plots_test)))
 	predicted_decade = classifier.predict(transformed_test_plots)
 	for i,decade in enumerate(predicted_decade):
 		if decade == years_test[i]:
